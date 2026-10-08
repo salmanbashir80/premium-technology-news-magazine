@@ -1,6 +1,6 @@
 import { publishedArticles, getArticle } from "../data/articles";
 import { categories, categoryMap } from "../data/categories";
-import { getAuthor } from "../data/authors";
+import { authors, getAuthor } from "../data/authors";
 import { brand } from "../config/brand";
 import { formatDateTime } from "../lib/format";
 import type { Article } from "../types";
@@ -271,23 +271,41 @@ export default {
     const parts = pathname.split("/").filter(Boolean);
 
     let article: Article | undefined;
-    let isArticleRoute = false;
+    let isNotFound = false;
 
-    if (parts.length === 2 && parts[0] === "article") {
+    const knownRoots = new Set([
+      "search", "about", "contact", "editorial-policy", "corrections-policy",
+      "privacy", "terms", "admin", "category", "author", "article",
+      ...categories.map((c) => c.slug),
+    ]);
+
+    if (parts.length > 0 && !knownRoots.has(parts[0])) {
+      isNotFound = true;
+    } else if (parts.length === 2 && parts[0] === "article") {
       // Legacy alias: /article/:slug
       article = getArticle(parts[1]);
-      isArticleRoute = true;
+      if (!article) isNotFound = true;
+    } else if (parts.length === 2 && parts[0] === "category") {
+      const exists = categories.some((c) => c.slug === parts[1]);
+      if (!exists) isNotFound = true;
+    } else if (parts.length === 2 && parts[0] === "author") {
+      const exists = authors.some((a) => a.slug === parts[1]);
+      if (!exists) isNotFound = true;
     } else if (parts.length === 2) {
       // Clean pattern: /:category/:slug (e.g., /ai/ai-power-bottleneck-data-centers)
       const isKnownCategory = categories.some((c) => c.slug === parts[0]);
       if (isKnownCategory) {
         article = getArticle(parts[1]);
-        isArticleRoute = true;
+        if (!article) isNotFound = true;
+      } else {
+        isNotFound = true;
       }
+    } else if (parts.length > 2) {
+      isNotFound = true;
     }
 
-    // If an article route was targeted but article does not exist -> Real HTTP 404!
-    if (isArticleRoute && !article) {
+    // Real HTTP 404 response for unmatched paths
+    if (isNotFound) {
       return new Response(buildNotFoundHtml(), {
         status: 404,
         headers: {
@@ -297,8 +315,9 @@ export default {
       });
     }
 
-    // Fetch base shell from assets
-    const assetResponse = await env.ASSETS.fetch(request);
+    // Fetch base HTML shell from assets
+    const indexUrl = new URL("/index.html", request.url);
+    const assetResponse = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
     if (!assetResponse.ok) {
       return assetResponse;
     }
