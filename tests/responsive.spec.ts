@@ -10,7 +10,7 @@ for (const viewport of [
 ]) {
   test(`home and article layout at ${viewport.width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
-    await page.goto("/#/");
+    await page.goto("/");
     await settleFonts(page);
     await noPageOverflow(page);
     const feature = page.locator("main article").first();
@@ -25,7 +25,7 @@ for (const viewport of [
       await expect(page.getByText(brand.demoNoticeShort, { exact: true })).toBeVisible();
     }
     await page.screenshot({ path: testInfo.outputPath("homepage.png"), animations: "disabled" });
-    await page.goto(`/#/article/${article.slug}`);
+    await page.goto(`/${article.category}/${article.slug}`);
     await settleFonts(page);
     await expect(page.locator("h1")).toHaveText(article.title);
     await noPageOverflow(page);
@@ -41,7 +41,7 @@ for (const viewport of [
 
 test("mobile menu traps focus, closes with Escape, and keeps navigation reachable", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
-  await page.goto("/#/");
+  await page.goto("/");
   const open = page.getByRole("button", { name: "Open menu", exact: true });
   await open.click();
   const dialog = page.getByRole("dialog", { name: "Menu", exact: true });
@@ -56,20 +56,20 @@ test("mobile menu traps focus, closes with Escape, and keeps navigation reachabl
   await expect(open).toBeFocused();
   await open.click();
   await dialog.getByRole("link", { name: "Artificial Intelligence", exact: true }).click();
-  await expect(page).toHaveURL(/#\/category\/ai$/);
+  await expect(page).toHaveURL(/\/category\/ai$/);
   await expect(dialog).toHaveCount(0);
   await noPageOverflow(page);
   await page.getByRole("button", { name: "Open search", exact: true }).click();
   await page.locator("#masthead-search").fill("identity");
   await page.locator("#masthead-search-panel").getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page).toHaveURL(/#\/search\?q=identity$/);
+  await expect(page).toHaveURL(/\/search\?q=identity$/);
   await noPageOverflow(page);
 });
 
 for (const path of ["/category/ai", "/author/priya-ramanathan", "/admin", "/admin/discovery", "/admin/settings"]) {
   test(`mobile secondary layout ${path}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto(`/#${path}`);
+    await page.goto(path);
     await expect(page.getByRole("main")).toBeVisible();
     await noPageOverflow(page);
   });

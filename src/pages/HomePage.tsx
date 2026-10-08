@@ -6,6 +6,7 @@ import { AdSlot } from "../components/ui/AdSlot";
 import { getAuthor } from "../data/authors";
 import { categoryMap } from "../data/categories";
 import { formatDateShort } from "../lib/format";
+import { getArticleUrl } from "../lib/urls";
 
 export function HomePage() {
   const featured = publishedArticles.find((a) => a.isFeatured) ?? publishedArticles[0];
@@ -37,7 +38,7 @@ export function HomePage() {
               {breaking.map((a) => (
                 <li key={a.id} className="shrink-0 sm:shrink">
                   <Link
-                    to={`/article/${a.slug}`}
+                    to={getArticleUrl(a)}
                     className="font-sans text-[12.5px] font-medium text-ink hover:text-emerald sm:text-sm"
                   >
                     {a.title}
@@ -148,7 +149,7 @@ export function HomePage() {
                     <div className="min-w-0">
                       <p className="kicker">{categoryMap[a.category].kicker}</p>
                       <h3 className="mt-1 font-display text-[1.15rem] font-medium leading-[1.2] tracking-[-0.018em] sm:text-xl">
-                        <Link to={`/article/${a.slug}`} className="hover:text-emerald">
+                        <Link to={getArticleUrl(a)} className="hover:text-emerald">
                           {a.title}
                         </Link>
                       </h3>

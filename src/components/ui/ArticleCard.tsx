@@ -3,6 +3,7 @@ import type { Article } from "../../types";
 import { categoryMap } from "../../data/categories";
 import { getAuthor } from "../../data/authors";
 import { formatDateShort } from "../../lib/format";
+import { getArticleUrl } from "../../lib/urls";
 import { cn } from "../../utils/cn";
 
 type Variant = "feature" | "secondary" | "standard" | "horizontal" | "minimal" | "text";
@@ -18,11 +19,12 @@ export function ArticleCard({
 }) {
   const category = categoryMap[article.category];
   const author = getAuthor(article.authorId);
+  const articleHref = getArticleUrl(article);
 
   if (variant === "text") {
     return (
       <article className={cn("py-3", className)}>
-        <Link to={`/article/${article.slug}`} className="group block">
+        <Link to={articleHref} className="group block">
           <p className="kicker">{category.kicker}</p>
           <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.25] tracking-[-0.015em] text-ink transition-colors group-hover:text-emerald sm:text-[1.15rem]">
             {article.title}
@@ -40,7 +42,7 @@ export function ArticleCard({
   if (variant === "minimal") {
     return (
       <article className={cn("border-t border-rule pt-4", className)}>
-        <Link to={`/article/${article.slug}`} className="group block">
+        <Link to={articleHref} className="group block">
           <p className="kicker">{category.kicker}</p>
           <h3 className="mt-2 font-display text-[1.25rem] font-medium leading-[1.18] tracking-[-0.018em] text-ink transition-colors group-hover:text-emerald sm:text-[1.35rem]">
             {article.title}
@@ -67,7 +69,7 @@ export function ArticleCard({
         )}
       >
         <Link
-          to={`/article/${article.slug}`}
+          to={articleHref}
           className="block self-start overflow-hidden bg-sand"
           tabIndex={-1}
           aria-hidden
@@ -84,7 +86,7 @@ export function ArticleCard({
         <div className="min-w-0">
           <p className="kicker">{category.kicker}</p>
           <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.22] tracking-[-0.015em] text-ink sm:text-[1.25rem]">
-            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
+            <Link to={articleHref} className="transition-colors hover:text-emerald">
               {article.title}
             </Link>
           </h3>
@@ -111,7 +113,7 @@ export function ArticleCard({
         <div className="min-w-0 flex-1">
           <p className="kicker">{category.kicker}</p>
           <h3 className="mt-1.5 font-display text-[1.15rem] font-medium leading-[1.2] tracking-[-0.018em] text-ink sm:text-[1.3rem]">
-            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
+            <Link to={articleHref} className="transition-colors hover:text-emerald">
               {article.title}
             </Link>
           </h3>
@@ -122,7 +124,7 @@ export function ArticleCard({
           </p>
         </div>
         <Link
-          to={`/article/${article.slug}`}
+          to={articleHref}
           className="w-[84px] shrink-0 self-start overflow-hidden bg-sand sm:w-28"
           tabIndex={-1}
           aria-hidden
@@ -143,7 +145,7 @@ export function ArticleCard({
   if (variant === "feature") {
     return (
       <article className={cn("group", className)}>
-        <Link to={`/article/${article.slug}`} className="block overflow-hidden bg-sand">
+        <Link to={articleHref} className="block overflow-hidden bg-sand">
           <img
             src={article.featuredImage}
             alt={article.featuredImageCaption}
@@ -163,7 +165,7 @@ export function ArticleCard({
             )}
           </div>
           <h2 className="mt-2.5 max-w-[22ch] font-display text-[1.85rem] font-medium leading-[1.08] tracking-[-0.022em] text-ink headline-balance sm:text-[2.4rem] md:text-[2.85rem] lg:text-[3.15rem]">
-            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald-deep">
+            <Link to={articleHref} className="transition-colors hover:text-emerald-deep">
               {article.title}
             </Link>
           </h2>
@@ -187,7 +189,7 @@ export function ArticleCard({
 
   return (
     <article className={cn("group", className)}>
-      <Link to={`/article/${article.slug}`} aria-label={article.title} className="block overflow-hidden bg-sand">
+      <Link to={articleHref} aria-label={article.title} className="block overflow-hidden bg-sand">
         <img
           src={article.featuredImage}
           alt=""
@@ -199,7 +201,7 @@ export function ArticleCard({
       </Link>
       <p className="kicker mt-3.5">{category.kicker}</p>
       <h3 className="mt-1.5 font-display text-[1.2rem] font-medium leading-[1.18] tracking-[-0.018em] text-ink sm:text-[1.3rem]">
-        <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
+        <Link to={articleHref} className="transition-colors hover:text-emerald">
           {article.title}
         </Link>
       </h3>

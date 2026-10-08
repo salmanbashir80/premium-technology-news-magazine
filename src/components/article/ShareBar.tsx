@@ -1,20 +1,28 @@
 import { useEffect, useState } from "react";
-import { useHref } from "react-router-dom";
 import { Check, Link as LinkIcon, Mail, Printer } from "lucide-react";
 import { cn } from "../../utils/cn";
 
 export function ShareBar({
   title,
   slug,
+  category,
   variant = "inline",
 }: {
   title: string;
   slug: string;
+  category?: string;
   variant?: "inline" | "rail";
 }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
-  const href = useHref(`/article/${slug}`);
-  const url = typeof window === "undefined" ? href : new URL(href, window.location.href).href;
+  const defaultPath = category ? `/${category}/${slug}` : `/article/${slug}`;
+  const [shareUrl, setShareUrl] = useState(() => `https://premium-technology-news-magazine.8002salman.workers.dev${defaultPath}`);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href);
+    }
+  }, []);
+
   const copied = status === "copied";
   const message = copied ? "Article link copied." : status === "error"
     ? "Clipboard access is unavailable. Copy the article address from your browser."
@@ -28,7 +36,8 @@ export function ShareBar({
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(url);
+      const activeUrl = typeof window !== "undefined" ? window.location.href : shareUrl;
+      await navigator.clipboard.writeText(activeUrl);
       setStatus("copied");
     } catch {
       setStatus("error");
@@ -45,7 +54,7 @@ export function ShareBar({
         <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-faint">Share</p>
         <div className="flex gap-2 lg:flex-col">
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`}
             target="_blank"
             rel="noreferrer"
             className={cn(btn, "h-9 w-9")}
@@ -54,7 +63,7 @@ export function ShareBar({
             X
           </a>
           <a
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
             target="_blank"
             rel="noreferrer"
             className={cn(btn, "h-9 w-9 text-[11px]")}
@@ -63,7 +72,7 @@ export function ShareBar({
             in
           </a>
           <a
-            href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}
+            href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(shareUrl)}`}
             className={cn(btn, "h-9 w-9")}
             aria-label="Share by email"
           >
@@ -84,7 +93,7 @@ export function ShareBar({
         Share
       </span>
       <a
-        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`}
+        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`}
         target="_blank"
         rel="noreferrer"
         className={cn(btn, "h-8 px-3")}
@@ -92,7 +101,7 @@ export function ShareBar({
         X
       </a>
       <a
-        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
         target="_blank"
         rel="noreferrer"
         className={cn(btn, "h-8 px-3")}
@@ -100,7 +109,7 @@ export function ShareBar({
         LinkedIn
       </a>
       <a
-        href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}
+        href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(shareUrl)}`}
         className={cn(btn, "h-8 px-3")}
       >
         Email

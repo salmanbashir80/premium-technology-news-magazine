@@ -163,7 +163,7 @@ export function ArticlePage() {
                 </div>
               )}
               <div className="md:shrink-0">
-                <ShareBar title={article.title} slug={article.slug} />
+                <ShareBar title={article.title} slug={article.slug} category={article.category} />
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@ export function ArticlePage() {
                   <p className="font-sans text-[13px] text-muted">
                     Share this story from the desk.
                   </p>
-                  <ShareBar title={article.title} slug={article.slug} />
+                  <ShareBar title={article.title} slug={article.slug} category={article.category} />
                 </div>
 
                 <div className="mt-9 space-y-7 sm:mt-10 sm:space-y-8">
@@ -255,7 +255,7 @@ export function ArticlePage() {
                   <TableOfContents blocks={article.body} />
                 </div>
                 <div className="hidden lg:block">
-                  <ShareBar title={article.title} slug={article.slug} variant="rail" />
+                  <ShareBar title={article.title} slug={article.slug} category={article.category} variant="rail" />
                 </div>
                 <AdSlot size="square" />
                 <div className="border-t-2 border-ink pt-4">
