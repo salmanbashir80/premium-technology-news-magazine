@@ -70,7 +70,7 @@ export function Header() {
     <header className="border-b border-rule bg-paper">
       <div className="hidden border-b border-rule bg-canvas sm:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-1 text-[11px] leading-5 tracking-wide text-muted sm:px-6">
-          <p>
+          <p suppressHydrationWarning>
             {todayLabel()}
             <span className="mx-2 text-rule-strong">|</span>
             {brand.editionLabel}

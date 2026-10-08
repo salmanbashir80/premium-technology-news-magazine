@@ -1,3 +1,6 @@
+import React from "react";
+import { renderToString } from "react-dom/server";
+import { ServerApp } from "../ServerApp";
 import { publishedArticles, getArticle } from "../data/articles";
 import { categories, categoryMap } from "../data/categories";
 import { authors, getAuthor } from "../data/authors";
@@ -381,10 +384,6 @@ export default {
       `.trim();
 
       html = html.replace("</head>", `  ${headInjection}\n</head>`);
-
-      // Inject Semantic Pre-rendered Article HTML into root
-      const articlePrerender = buildArticlePrerenderHtml(article);
-      html = html.replace('<div id="root"></div>', `<div id="root">${articlePrerender}</div>`);
     } else {
       // General Pages (Homepage, Category, Info pages)
       const isKnownCategory = parts.length === 2 && parts[0] === "category" ? categories.find((c) => c.slug === parts[1]) : categories.find((c) => c.slug === parts[0]);
@@ -396,6 +395,22 @@ export default {
 
       html = html.replace(/<title>.*?<\/title>/i, `<title>${escapeXml(pageTitle)}</title>`);
       html = html.replace("</head>", `  <meta name="robots" content="noindex, nofollow">\n</head>`);
+    }
+
+    // Genuine React Server-Side Rendering (SSR)
+    // Renders the exact matching React markup into #root so client hydrateRoot hydrates seamlessly
+    let appHtml = "";
+    try {
+      appHtml = renderToString(React.createElement(ServerApp, { location: pathname }));
+    } catch (err) {
+      console.error("SSR render error:", err);
+      if (article) {
+        appHtml = buildArticlePrerenderHtml(article);
+      }
+    }
+
+    if (appHtml) {
+      html = html.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
     }
 
     return new Response(html, {

@@ -91,43 +91,49 @@ function RouteSync() {
   return null;
 }
 
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        {/* Clean SEO Article URL pattern: /:category/:slug (e.g., /ai/ai-power-bottleneck-data-centers) */}
+        <Route path="/:category/:slug" element={<ArticlePage />} />
+        {/* Legacy alias for backwards compatibility */}
+        <Route path="/article/:slug" element={<ArticlePage />} />
+        <Route path="/category/:slug" element={<CategoryPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/author/:slug" element={<AuthorPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/editorial-policy" element={<EditorialPolicyPage />} />
+        <Route path="/corrections-policy" element={<CorrectionsPolicyPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+      </Route>
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminOverview />} />
+        <Route path="discovery" element={<DiscoveryPage />} />
+        <Route path="research" element={<ResearchPage />} />
+        <Route path="drafts" element={<DraftsPage />} />
+        <Route path="approvals" element={<ApprovalsPage />} />
+        <Route path="published" element={<PublishedAdminPage />} />
+        <Route path="media" element={<MediaPage />} />
+        <Route path="seo" element={<SeoPage />} />
+        <Route path="automation" element={<AutomationPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+      {/* Explicit 404 Route */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <RouteSync />
-        <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<HomePage />} />
-            {/* Clean SEO Article URL pattern: /:category/:slug (e.g., /ai/ai-power-bottleneck-data-centers) */}
-            <Route path="/:category/:slug" element={<ArticlePage />} />
-            {/* Legacy alias for backwards compatibility */}
-            <Route path="/article/:slug" element={<ArticlePage />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/author/:slug" element={<AuthorPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/editorial-policy" element={<EditorialPolicyPage />} />
-            <Route path="/corrections-policy" element={<CorrectionsPolicyPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-          </Route>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminOverview />} />
-            <Route path="discovery" element={<DiscoveryPage />} />
-            <Route path="research" element={<ResearchPage />} />
-            <Route path="drafts" element={<DraftsPage />} />
-            <Route path="approvals" element={<ApprovalsPage />} />
-            <Route path="published" element={<PublishedAdminPage />} />
-            <Route path="media" element={<MediaPage />} />
-            <Route path="seo" element={<SeoPage />} />
-            <Route path="automation" element={<AutomationPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-          {/* Explicit 404 Route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AppProvider>
   );

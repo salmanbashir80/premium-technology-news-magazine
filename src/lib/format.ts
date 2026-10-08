@@ -29,5 +29,6 @@ export function todayLabel() {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   }).format(new Date());
 }
