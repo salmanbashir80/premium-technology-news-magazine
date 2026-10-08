@@ -9,6 +9,7 @@ import {
 import { getAuthor } from "../data/authors";
 import { categoryMap } from "../data/categories";
 import { formatDateTime } from "../lib/format";
+import { generateArticleSchema } from "../lib/pageMetadata";
 import { ArticleBody } from "../components/article/ArticleBody";
 import { AuthorCard } from "../components/article/AuthorCard";
 import { KeyTakeaways } from "../components/article/KeyTakeaways";
@@ -46,7 +47,7 @@ export function ArticlePage() {
         </p>
         <Link
           to="/"
-          className="mt-6 inline-block border border-ink px-5 py-2.5 text-sm font-semibold text-ink hover:bg-ink hover:text-paper"
+          className="mt-6 inline-block border border-ink px-5 py-2.5 font-sans text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
         >
           Return to the homepage
         </Link>
@@ -60,10 +61,17 @@ export function ArticlePage() {
   const sidebarStories = moreFromCategory(article, related, 4);
   const authorStories = author ? articlesByAuthor(author.id).length : 0;
   const wasUpdated = article.updatedAt !== article.publishedAt;
+  const jsonLd = generateArticleSchema(article);
 
   return (
     <>
       <ReadingProgress targetId="article-root" />
+
+      {/* Structured Data JSON-LD Script */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       <article id="article-root" className="bg-paper">
         {/* ---------------- Headline block ---------------- */}
@@ -83,6 +91,12 @@ export function ArticlePage() {
                   {category.name}
                 </Link>
               </li>
+              <li aria-hidden className="text-rule-strong">
+                /
+              </li>
+              <li className="max-w-[200px] truncate text-muted sm:max-w-xs">
+                {article.title}
+              </li>
             </ol>
           </nav>
 
@@ -91,17 +105,17 @@ export function ArticlePage() {
               {category.kicker}
             </Link>
             {article.isBreaking && (
-              <span className="bg-newsred px-1.5 py-0.5 font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-paper">
+              <span className="bg-newsred px-1.5 py-0.5 font-sans text-[9.5px] font-bold uppercase tracking-[0.14em] text-paper">
                 Developing
               </span>
             )}
           </div>
 
-          <h1 className="mt-2 max-w-[21ch] font-display text-[1.8rem] font-medium leading-[1.11] tracking-[-0.022em] text-ink headline-balance sm:text-[2.55rem] sm:leading-[1.06] md:text-[3.05rem] lg:text-[3.35rem]">
+          <h1 className="mt-2.5 max-w-[22ch] font-display text-[1.95rem] font-medium leading-[1.08] tracking-[-0.022em] text-ink headline-balance sm:text-[2.65rem] sm:leading-[1.05] md:text-[3.15rem] lg:text-[3.45rem]">
             {article.title}
           </h1>
 
-          <p className="mt-3.5 max-w-[46ch] font-serif text-[16.5px] leading-[1.5] text-muted headline-pretty sm:mt-5 sm:text-xl md:text-[1.3rem]">
+          <p className="mt-3.5 max-w-[46ch] font-serif text-[17px] leading-[1.5] text-muted headline-pretty sm:mt-5 sm:text-xl md:text-[1.32rem]">
             {article.dek}
           </p>
 
@@ -122,7 +136,7 @@ export function ArticlePage() {
                   <div className="min-w-0">
                     <p className="font-sans text-[13px] leading-tight sm:text-[13.5px]">
                       <span className="text-muted">By </span>
-                      <Link to={`/author/${author.slug}`} className="font-semibold hover:text-emerald">
+                      <Link to={`/author/${author.slug}`} className="font-semibold text-ink transition-colors hover:text-emerald">
                         {author.name}
                       </Link>
                       <span className="text-muted"> · {author.role}</span>
@@ -161,6 +175,8 @@ export function ArticlePage() {
             src={article.featuredImage}
             alt={article.featuredImageCaption}
             fetchPriority="high"
+            width={1200}
+            height={675}
             className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]"
           />
           <figcaption className="mx-4 mt-2.5 max-w-3xl font-sans text-[11.5px] leading-[1.5] text-faint sm:mx-0">
@@ -174,6 +190,7 @@ export function ArticlePage() {
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-7 sm:px-6 sm:pb-14 sm:pt-10">
           <div className="grid gap-x-12 gap-y-10 lg:grid-cols-12">
             <div className="min-w-0 lg:col-span-8">
+              {/* Max width measure enforced: 720-760px measure */}
               <div className="article-measure">
                 <div className="lg:hidden">
                   <TableOfContents blocks={article.body} variant="inline" />
@@ -202,7 +219,7 @@ export function ArticlePage() {
                         <li key={t}>
                           <Link
                             to={`/search?q=${encodeURIComponent(t)}`}
-                            className="inline-block border border-rule px-2.5 py-1 font-sans text-[11.5px] text-muted hover:border-ink hover:text-ink"
+                            className="inline-block border border-rule px-2.5 py-1 font-sans text-[11.5px] text-muted transition-colors hover:border-ink hover:text-ink"
                           >
                             {t}
                           </Link>
@@ -231,7 +248,7 @@ export function ArticlePage() {
               </div>
             </div>
 
-            {/* Sidebar */}
+            {/* Sidebar Rail */}
             <aside className="lg:col-span-4" aria-label="Article extras">
               <div className="space-y-7 lg:sticky lg:top-6">
                 <div className="hidden lg:block">
