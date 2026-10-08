@@ -315,9 +315,9 @@ export default {
       });
     }
 
-    // Fetch base HTML shell from assets
-    const indexUrl = new URL("/index.html", request.url);
-    const assetResponse = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    // Fetch base HTML shell from assets (fetching root "/" serves dist/index.html with 200 OK)
+    const rootUrl = new URL("/", request.url);
+    const assetResponse = await env.ASSETS.fetch(new Request(rootUrl.toString(), request));
     if (!assetResponse.ok) {
       return assetResponse;
     }
