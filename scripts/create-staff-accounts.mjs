@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-let supabaseUrl = '';
-let serviceRoleKey = '';
+// Reads credentials safely from .env.local or process.env
+let supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (fs.existsSync('.env.local')) {
   const envContent = fs.readFileSync('.env.local', 'utf8');
@@ -15,7 +17,7 @@ if (fs.existsSync('.env.local')) {
 }
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('ERROR: Missing Supabase credentials in .env.local');
+  console.error('ERROR: SUPABASE_SERVICE_ROLE_KEY required.');
   process.exit(1);
 }
 
@@ -23,97 +25,48 @@ const adminClient = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-const staffToCreate = [
-  {
-    email: 'editorial.owner@signaldesk.news',
-    password: 'SignalDeskOwnerPass2026!',
-    role: 'OWNER',
-    full_name: 'Basco Editorial Director',
-  },
-  {
-    email: 'admin@signaldesk.news',
-    password: 'SignalDeskAdminPass2026!',
-    role: 'ADMIN',
-    full_name: 'Managing Editor',
-  },
-  {
-    email: 'maya.ellison@signaldesk.news',
-    password: 'SignalDeskEditorPass2026!',
-    role: 'EDITOR',
-    full_name: 'Maya Ellison',
-  },
-  {
-    email: 'researcher@signaldesk.news',
-    password: 'SignalDeskResearchPass2026!',
-    role: 'RESEARCHER',
-    full_name: 'Hermes Research Agent',
-  }
-];
-
-async function main() {
-  console.log('=== INITIALIZING EDITORIAL STAFF ACCOUNTS ===');
-
-  for (const staff of staffToCreate) {
-    console.log(`\nCreating staff account: ${staff.email} (${staff.role})...`);
-    
-    // Check if user exists
-    const { data: usersData } = await adminClient.auth.admin.listUsers();
-    const existing = usersData?.users?.find(u => u.email === staff.email);
-
-    let userId;
-    if (existing) {
-      console.log(`User already exists (ID: ${existing.id}). Updating password and metadata...`);
-      userId = existing.id;
-      await adminClient.auth.admin.updateUserById(userId, {
-        password: staff.password,
-        user_metadata: { role: staff.role, full_name: staff.full_name },
-        email_confirm: true
-      });
-    } else {
-      const { data, error } = await adminClient.auth.admin.createUser({
-        email: staff.email,
-        password: staff.password,
-        email_confirm: true,
-        user_metadata: { role: staff.role, full_name: staff.full_name }
-      });
-
-      if (error) {
-        console.error(`Error creating user ${staff.email}:`, error.message);
-        continue;
-      }
-      userId = data.user.id;
-      console.log(`Created Auth User: ${userId}`);
-    }
-
-    // Upsert Profile
-    const { error: profError } = await adminClient
-      .from('profiles')
-      .upsert({
-        id: userId,
-        email: staff.email,
-        full_name: staff.full_name,
-        role: staff.role,
-        updated_at: new Date().toISOString()
-      });
-
-    if (profError) {
-      console.error(`Profile error for ${staff.email}:`, profError.message);
-    } else {
-      console.log(`Profile synced: ${staff.email} -> ${staff.role}`);
-    }
+/**
+ * Secure invitation-based staff onboarding.
+ * Usage: node scripts/create-staff-accounts.mjs <email> <role: OWNER|ADMIN|EDITOR|RESEARCHER> <full_name>
+ */
+async function inviteStaff(email, role, fullName) {
+  if (!email || !role || !fullName) {
+    console.log('Usage: node scripts/create-staff-accounts.mjs <email> <role> <full_name>');
+    console.log('Allowed roles: OWNER, ADMIN, EDITOR, RESEARCHER');
+    return;
   }
 
-  // Verify Profiles
-  console.log('\n=== VERIFYING PROFILES IN DATABASE ===');
-  const { data: profiles, error: pErr } = await adminClient
-    .from('profiles')
-    .select('*')
-    .order('role');
-
-  if (pErr) console.error('Error fetching profiles:', pErr);
-  else {
-    profiles.forEach(p => console.log(` - [${p.role.padEnd(10)}] ${p.email} (${p.full_name})`));
+  const validRoles = ['OWNER', 'ADMIN', 'EDITOR', 'RESEARCHER'];
+  if (!validRoles.includes(role)) {
+    console.error(`Invalid role: ${role}. Must be one of ${validRoles.join(', ')}`);
+    process.exit(1);
   }
+
+  console.log(`Sending secure invitation to ${email} for role ${role}...`);
+  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    data: { role, full_name: fullName }
+  });
+
+  if (error) {
+    console.error(`Invitation failed: ${error.message}`);
+    process.exit(1);
+  }
+
+  const userId = data.user.id;
+  await adminClient.from('profiles').upsert({
+    id: userId,
+    email,
+    full_name: fullName,
+    role,
+    updated_at: new Date().toISOString()
+  });
+
+  console.log(`Invitation sent successfully. Profile created with role ${role}.`);
 }
 
-main().catch(console.error);
+const [,, targetEmail, targetRole, targetName] = process.argv;
+if (targetEmail) {
+  inviteStaff(targetEmail, targetRole, targetName).catch(console.error);
+} else {
+  console.log('Administrative Onboarding Tool: Ready. Pass arguments to invite authorized staff.');
+}

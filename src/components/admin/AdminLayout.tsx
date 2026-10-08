@@ -34,13 +34,17 @@ const nav = [
 
 function StaffLoginModal({ onClose }: { onClose: () => void }) {
   const { signIn } = useApp();
-  const [email, setEmail] = useState("editorial.owner@signaldesk.news");
-  const [password, setPassword] = useState("SignalDeskOwnerPass2026!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!email || !password) {
+      setErrorMsg("Please enter both email and password.");
+      return;
+    }
     setLoading(true);
     setErrorMsg("");
     const { error } = await signIn(email, password);
@@ -50,11 +54,6 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
     } else {
       onClose();
     }
-  };
-
-  const setPreset = (presetEmail: string, presetPass: string) => {
-    setEmail(presetEmail);
-    setPassword(presetPass);
   };
 
   return (
@@ -83,8 +82,10 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="editor@signaldesk.news"
               required
-              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm"
+              autoComplete="username"
+              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
             />
           </div>
 
@@ -97,8 +98,10 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
               required
-              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm"
+              autoComplete="current-password"
+              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
             />
           </div>
 
@@ -111,44 +114,11 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
           </button>
         </form>
 
-        <div className="mt-4 border-t border-rule pt-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-faint">
-            Role Preset Accounts:
+        <div className="mt-4 border-t border-rule pt-3 text-[11px] text-muted">
+          <p className="font-medium text-ink">Strict Onboarding &amp; RBAC Notice</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted">
+            Public editorial registration is strictly disabled. Staff accounts are provisioned via verified administrative invitation with enforced Row Level Security.
           </p>
-          <div className="grid grid-cols-2 gap-2 text-left">
-            <button
-              type="button"
-              onClick={() => setPreset("editorial.owner@signaldesk.news", "SignalDeskOwnerPass2026!")}
-              className="border border-rule bg-stone-50 p-1.5 text-[11px] hover:border-emerald"
-            >
-              <span className="block font-bold text-emerald">OWNER</span>
-              <span className="text-faint truncate block text-[10px]">editorial.owner@...</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreset("admin@signaldesk.news", "SignalDeskAdminPass2026!")}
-              className="border border-rule bg-stone-50 p-1.5 text-[11px] hover:border-emerald"
-            >
-              <span className="block font-bold text-sky-800">ADMIN</span>
-              <span className="text-faint truncate block text-[10px]">admin@signaldesk...</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreset("maya.ellison@signaldesk.news", "SignalDeskEditorPass2026!")}
-              className="border border-rule bg-stone-50 p-1.5 text-[11px] hover:border-emerald"
-            >
-              <span className="block font-bold text-amber-800">EDITOR</span>
-              <span className="text-faint truncate block text-[10px]">maya.ellison@...</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreset("researcher@signaldesk.news", "SignalDeskResearchPass2026!")}
-              className="border border-rule bg-stone-50 p-1.5 text-[11px] hover:border-emerald"
-            >
-              <span className="block font-bold text-purple-800">RESEARCHER</span>
-              <span className="text-faint truncate block text-[10px]">researcher@...</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>

@@ -5,13 +5,21 @@ const env = fs.readFileSync('.env.local', 'utf8');
 const url = env.match(/VITE_SUPABASE_URL\s*=\s*"?([^\r\n"]+)"?/)[1].trim();
 const anon = env.match(/VITE_SUPABASE_ANON_KEY\s*=\s*"?([^\r\n"]+)"?/)[1].trim();
 
+const testEmail = (env.match(/TEST_STAFF_EMAIL\s*=\s*"?([^\r\n"]+)"?/) || [])[1]?.trim() || process.env.TEST_STAFF_EMAIL;
+const testPass = (env.match(/TEST_STAFF_PASSWORD\s*=\s*"?([^\r\n"]+)"?/) || [])[1]?.trim() || process.env.TEST_STAFF_PASSWORD;
+
+if (!testEmail || !testPass) {
+  console.log('No TEST_STAFF_EMAIL/PASSWORD found in environment or .env.local');
+  process.exit(0);
+}
+
 async function testAuth() {
   const client = createClient(url, anon);
 
-  console.log('Testing authentication for OWNER: editorial.owner@signaldesk.news...');
+  console.log(`Testing authentication for staff: ${testEmail}...`);
   const { data, error } = await client.auth.signInWithPassword({
-    email: 'editorial.owner@signaldesk.news',
-    password: 'SignalDeskOwnerPass2026!'
+    email: testEmail,
+    password: testPass,
   });
 
   if (error) {
@@ -19,7 +27,7 @@ async function testAuth() {
     process.exit(1);
   }
 
-  console.log('Successfully signed in!');
+  console.log('Successfully signed in with Supabase Auth!');
   console.log('User ID:', data.user.id);
   console.log('User Email:', data.user.email);
 
