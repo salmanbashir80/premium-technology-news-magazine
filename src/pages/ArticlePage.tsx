@@ -21,10 +21,15 @@ import { ArticleCard } from "../components/ui/ArticleCard";
 import { Newsletter } from "../components/ui/Newsletter";
 import { AdSlot } from "../components/ui/AdSlot";
 import { brand } from "../config/brand";
+import { useApp } from "../context/AppContext";
 
 export function ArticlePage() {
   const { slug } = useParams();
-  const article = slug ? getArticle(slug) : undefined;
+  const { liveArticles } = useApp();
+  const article = useMemo(() => {
+    if (!slug) return undefined;
+    return liveArticles.find((a) => a.slug === slug) ?? getArticle(slug);
+  }, [slug, liveArticles]);
 
   /** Split the body so a discreet in-article advert sits at a natural section break. */
   const split = useMemo(() => {

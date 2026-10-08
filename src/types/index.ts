@@ -7,15 +7,32 @@ export type CategorySlug =
   | "ecommerce"
   | "guides";
 
+export type UserEditorialRole = "OWNER" | "ADMIN" | "EDITOR" | "RESEARCHER";
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url?: string | null;
+  role: UserEditorialRole;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type ArticleStatus =
   | "discovered"
   | "researching"
-  | "drafted"
-  | "needs_review"
+  | "draft"
+  | "fact_check"
+  | "editorial_review"
   | "approved"
   | "scheduled"
   | "published"
   | "rejected"
+  | "archived"
+  // Legacy aliases for backward compatibility
+  | "drafted"
+  | "needs_review"
   | "failed";
 
 export type ContentBlock =

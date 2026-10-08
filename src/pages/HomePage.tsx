@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 import { publishedArticles } from "../data/articles";
 import { ArticleCard } from "../components/ui/ArticleCard";
 import { Newsletter } from "../components/ui/Newsletter";
@@ -9,20 +10,23 @@ import { formatDateShort } from "../lib/format";
 import { getArticleUrl } from "../lib/urls";
 
 export function HomePage() {
-  const featured = publishedArticles.find((a) => a.isFeatured) ?? publishedArticles[0];
-  const breaking = publishedArticles.filter((a) => a.isBreaking);
-  const rest = publishedArticles.filter((a) => a.id !== featured.id);
+  const { liveArticles } = useApp();
+  const allArticles = liveArticles.length > 0 ? liveArticles : publishedArticles;
+
+  const featured = allArticles.find((a) => a.isFeatured) ?? allArticles[0];
+  const breaking = allArticles.filter((a) => a.isBreaking);
+  const rest = allArticles.filter((a) => a.id !== featured.id);
   const secondary = rest.slice(0, 3);
   const latest = rest.slice(0, 6);
-  const trending = publishedArticles.filter((a) => a.isTrending).slice(0, 5);
-  const picks = publishedArticles.filter((a) => a.isEditorsPick).slice(0, 4);
-  const ai = publishedArticles.filter((a) => a.category === "ai").slice(0, 4);
-  const tech = publishedArticles.filter((a) => a.category === "technology").slice(0, 3);
-  const startups = publishedArticles.filter((a) => a.category === "startups").slice(0, 3);
-  const business = publishedArticles.filter((a) => a.category === "business").slice(0, 3);
-  const cyber = publishedArticles.filter((a) => a.category === "cybersecurity").slice(0, 3);
-  const commerce = publishedArticles.filter((a) => a.category === "ecommerce").slice(0, 3);
-  const guides = publishedArticles.filter((a) => a.category === "guides").slice(0, 3);
+  const trending = allArticles.filter((a) => a.isTrending).slice(0, 5);
+  const picks = allArticles.filter((a) => a.isEditorsPick).slice(0, 4);
+  const ai = allArticles.filter((a) => a.category === "ai").slice(0, 4);
+  const tech = allArticles.filter((a) => a.category === "technology").slice(0, 3);
+  const startups = allArticles.filter((a) => a.category === "startups").slice(0, 3);
+  const business = allArticles.filter((a) => a.category === "business").slice(0, 3);
+  const cyber = allArticles.filter((a) => a.category === "cybersecurity").slice(0, 3);
+  const commerce = allArticles.filter((a) => a.category === "ecommerce").slice(0, 3);
+  const guides = allArticles.filter((a) => a.category === "guides").slice(0, 3);
 
   return (
     <div>

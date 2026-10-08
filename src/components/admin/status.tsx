@@ -14,10 +14,25 @@ export const statusMeta: Record<
     className: "bg-sky-100 text-sky-900",
     hint: "A reporter or agent is gathering sources.",
   },
+  draft: {
+    label: "Draft",
+    className: "bg-amber-100 text-amber-950",
+    hint: "Writer or reporter drafting story copy.",
+  },
   drafted: {
     label: "Drafted",
     className: "bg-amber-100 text-amber-950",
-    hint: "Copy exists. Not yet submitted for edit.",
+    hint: "Copy exists. Ready for review.",
+  },
+  fact_check: {
+    label: "Fact Check",
+    className: "bg-purple-100 text-purple-950",
+    hint: "Sources and citations under verification.",
+  },
+  editorial_review: {
+    label: "Editorial Review",
+    className: "bg-orange-100 text-orange-950",
+    hint: "Desk editor reviewing tone, legal, and headlines.",
   },
   needs_review: {
     label: "Needs review",
@@ -27,7 +42,7 @@ export const statusMeta: Record<
   approved: {
     label: "Approved",
     className: "bg-emerald-soft text-emerald-deep",
-    hint: "Cleared to publish. May still need art.",
+    hint: "Cleared to publish by editorial desk.",
   },
   scheduled: {
     label: "Scheduled",
@@ -37,12 +52,17 @@ export const statusMeta: Record<
   published: {
     label: "Published",
     className: "bg-emerald text-paper",
-    hint: "Live on the public site (demo).",
+    hint: "Live on the public website.",
   },
   rejected: {
     label: "Rejected",
     className: "bg-red-100 text-red-900",
-    hint: "Killed. Will not ship in this form.",
+    hint: "Killed or sent back for rewrite.",
+  },
+  archived: {
+    label: "Archived",
+    className: "bg-stone-200 text-stone-700",
+    hint: "Archived from active publication.",
   },
   failed: {
     label: "Failed",
@@ -54,13 +74,14 @@ export const statusMeta: Record<
 export const statusOrder: ArticleStatus[] = [
   "discovered",
   "researching",
-  "drafted",
-  "needs_review",
+  "draft",
+  "fact_check",
+  "editorial_review",
   "approved",
   "scheduled",
   "published",
   "rejected",
-  "failed",
+  "archived",
 ];
 
 export function StatusBadge({ status }: { status: ArticleStatus }) {
