@@ -3,11 +3,11 @@ import AxeBuilder from "@axe-core/playwright";
 import { article } from "./catalogue";
 
 for (const path of [
-  "/", `/article/${article.slug}`, "/category/ai", "/search", "/author/maya-ellison",
+  "/", `/${article.category}/${article.slug}`, `/article/${article.slug}`, "/category/ai", "/search", "/author/maya-ellison",
   "/contact", "/about", "/admin", "/admin/discovery", "/admin/settings",
 ]) {
   test(`automated accessibility ${path}`, async ({ page }, testInfo) => {
-    await page.goto(`/#${path}`, { waitUntil: "domcontentloaded" });
+    await page.goto(path, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("main")).toBeVisible();
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -19,7 +19,7 @@ for (const path of [
 
 test("mobile article and menu accessibility", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
-  await page.goto(`/#/article/${article.slug}`);
+  await page.goto(`/${article.category}/${article.slug}`);
   const articleResults = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(articleResults.violations.map((v) => v.id)).toEqual([]);

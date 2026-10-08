@@ -6,15 +6,17 @@ import { cn } from "../../utils/cn";
 export function ShareBar({
   title,
   slug,
+  category,
   variant = "inline",
 }: {
   title: string;
   slug: string;
+  category?: string;
   variant?: "inline" | "rail";
 }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
-  const href = useHref(`/article/${slug}`);
-  const url = typeof window === "undefined" ? href : new URL(href, window.location.href).href;
+  const href = useHref(category ? `/${category}/${slug}` : `/article/${slug}`);
+  const url = typeof window === "undefined" ? href : window.location.href;
   const copied = status === "copied";
   const message = copied ? "Article link copied." : status === "error"
     ? "Clipboard access is unavailable. Copy the article address from your browser."

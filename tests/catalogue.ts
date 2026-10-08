@@ -17,6 +17,7 @@ export const editorialPaths = [
 export const routeCases = [
   { path: "/", heading: "Signal Desk: technology news and analysis" },
   ...categories.map((c) => ({ path: `/category/${c.slug}`, heading: c.name })),
+  ...articles.map((a) => ({ path: `/${a.category}/${a.slug}`, heading: a.title })),
   ...articles.map((a) => ({ path: `/article/${a.slug}`, heading: a.title })),
   ...authors.map((a) => ({ path: `/author/${a.slug}`, heading: a.name })),
   { path: "/search", heading: "Look through the desk" },
