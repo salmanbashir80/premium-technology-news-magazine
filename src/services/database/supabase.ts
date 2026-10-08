@@ -56,6 +56,7 @@ export interface ICategoryRepository {
 export function mapDbToArticle(row: any): Article {
   const categorySlug = row.categories?.slug || row.category_slug || row.category_id || "technology";
   const authorSlug = row.authors?.slug || row.author_slug || row.author_id || "maya-ellison";
+  const staticFallback = getStaticArticle(row.slug);
 
   return {
     id: row.id,
@@ -64,7 +65,7 @@ export function mapDbToArticle(row: any): Article {
     dek: row.dek,
     excerpt: row.summary || row.dek,
     category: categorySlug as CategorySlug,
-    tags: Array.isArray(row.tags) ? row.tags : [],
+    tags: Array.isArray(row.tags) && row.tags.length > 0 ? row.tags : (staticFallback?.tags || []),
     authorId: authorSlug,
     publishedAt: row.published_at || row.created_at,
     updatedAt: row.updated_at || row.published_at || row.created_at,
@@ -76,11 +77,17 @@ export function mapDbToArticle(row: any): Article {
     isBreaking: Boolean(row.is_breaking),
     isEditorsPick: Boolean(row.is_editors_pick),
     isTrending: Boolean(row.is_trending),
-    keyTakeaways: Array.isArray(row.key_takeaways) ? row.key_takeaways : [],
-    body: (Array.isArray(row.body) ? row.body : []) as ContentBlock[],
-    sources: Array.isArray(row.sources) ? row.sources : [],
-    corrections: Array.isArray(row.corrections) ? row.corrections : [],
-    status: row.status as ArticleStatus,
+    keyTakeaways: Array.isArray(row.key_takeaways) && row.key_takeaways.length > 0
+      ? row.key_takeaways
+      : (staticFallback?.keyTakeaways || []),
+    body: (Array.isArray(row.body) && row.body.length > 0 ? row.body : (staticFallback?.body || [])) as ContentBlock[],
+    sources: Array.isArray(row.sources) && row.sources.length > 0
+      ? row.sources
+      : (staticFallback?.sources || []),
+    corrections: Array.isArray(row.corrections) && row.corrections.length > 0
+      ? row.corrections
+      : (staticFallback?.corrections || []),
+    status: (row.status || "published") as ArticleStatus,
     isDemo: false as any,
   };
 }

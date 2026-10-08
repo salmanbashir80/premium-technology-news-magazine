@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import type { AdminItem, Article, ArticleStatus, UserEditorialRole, UserProfile } from "../types";
 import { initialAdminItems } from "../data/admin";
 import { publishedArticles } from "../data/articles";
@@ -45,6 +45,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    if (!isSupabaseConfigured) {
+      setAuthLoading(false);
+      return;
+    }
+
     async function loadSession() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -86,6 +91,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function fetchProfile(userId: string, email: string) {
+    if (!isSupabaseConfigured) return;
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -122,24 +128,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // 2. Fetch live articles & candidates from Supabase
   const refreshData = async () => {
+    if (!isSupabaseConfigured) return;
     try {
-      // Query published articles (and drafts if authenticated staff)
+      // Query published articles only for public feed
       const { data: artRows, error: artErr } = await supabase
         .from("articles")
         .select("*, categories(slug, name, kicker), authors(slug, name, role)")
+        .eq("status", "published")
         .order("published_at", { ascending: false });
 
       if (!artErr && artRows && artRows.length > 0) {
         setLiveArticles(artRows.map(mapDbToArticle));
       }
 
-      // Query story candidates for admin queue
-      const { data: candRows, error: candErr } = await supabase
-        .from("story_candidates")
-        .select("*")
-        .order("discovered_at", { ascending: false });
+      // Query story candidates only if user is authenticated staff
+      if (user) {
+        const { data: candRows, error: candErr } = await supabase
+          .from("story_candidates")
+          .select("*")
+          .order("discovered_at", { ascending: false });
 
-      if (!candErr && candRows && candRows.length > 0) {
+        if (!candErr && candRows && candRows.length > 0) {
         const mappedItems: AdminItem[] = candRows.map((c) => ({
           id: c.id,
           headline: c.title,
@@ -154,6 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
 
         setAdminItems(mappedItems);
+        }
       }
     } catch {
       // Resilient local fallback maintains full UI continuity
