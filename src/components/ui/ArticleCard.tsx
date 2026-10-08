@@ -24,7 +24,7 @@ export function ArticleCard({
       <article className={cn("py-3", className)}>
         <Link to={`/article/${article.slug}`} className="group block">
           <p className="kicker">{category.kicker}</p>
-          <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.25] tracking-[-0.015em] text-ink group-hover:text-emerald sm:text-[1.15rem]">
+          <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.25] tracking-[-0.015em] text-ink transition-colors group-hover:text-emerald sm:text-[1.15rem]">
             {article.title}
           </h3>
           <p className="mt-1.5 font-sans text-[11.5px] text-faint">
@@ -42,7 +42,7 @@ export function ArticleCard({
       <article className={cn("border-t border-rule pt-4", className)}>
         <Link to={`/article/${article.slug}`} className="group block">
           <p className="kicker">{category.kicker}</p>
-          <h3 className="mt-2 font-display text-[1.25rem] font-medium leading-[1.18] tracking-[-0.018em] text-ink group-hover:text-emerald sm:text-[1.35rem]">
+          <h3 className="mt-2 font-display text-[1.25rem] font-medium leading-[1.18] tracking-[-0.018em] text-ink transition-colors group-hover:text-emerald sm:text-[1.35rem]">
             {article.title}
           </h3>
           <p className="mt-2 line-clamp-2 font-serif text-[14.5px] leading-[1.55] text-muted sm:text-[15px]">
@@ -51,7 +51,7 @@ export function ArticleCard({
           <p className="mt-2.5 font-sans text-[11.5px] text-faint">
             {author?.name}
             <span className="mx-1.5 text-rule-strong">·</span>
-            {article.readingTime} min
+            {article.readingTime} min read
           </p>
         </Link>
       </article>
@@ -76,13 +76,15 @@ export function ArticleCard({
             src={article.featuredImage}
             alt=""
             loading="lazy"
+            width={180}
+            height={135}
             className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         </Link>
         <div className="min-w-0">
           <p className="kicker">{category.kicker}</p>
-          <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.22] tracking-[-0.015em] text-ink sm:text-xl">
-            <Link to={`/article/${article.slug}`} className="hover:text-emerald">
+          <h3 className="mt-1 font-display text-[1.0625rem] font-medium leading-[1.22] tracking-[-0.015em] text-ink sm:text-[1.25rem]">
+            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
               {article.title}
             </Link>
           </h3>
@@ -94,7 +96,7 @@ export function ArticleCard({
             <span className="mx-1.5 text-rule-strong">·</span>
             {formatDateShort(article.publishedAt)}
             <span className="mx-1.5 hidden text-rule-strong sm:inline">·</span>
-            <span className="hidden sm:inline">{article.readingTime} min</span>
+            <span className="hidden sm:inline">{article.readingTime} min read</span>
           </p>
         </div>
       </article>
@@ -109,14 +111,14 @@ export function ArticleCard({
         <div className="min-w-0 flex-1">
           <p className="kicker">{category.kicker}</p>
           <h3 className="mt-1.5 font-display text-[1.15rem] font-medium leading-[1.2] tracking-[-0.018em] text-ink sm:text-[1.3rem]">
-            <Link to={`/article/${article.slug}`} className="hover:text-emerald">
+            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
               {article.title}
             </Link>
           </h3>
           <p className="mt-2 font-sans text-[11.5px] text-faint">
             {author?.name}
             <span className="mx-1.5 text-rule-strong">·</span>
-            {article.readingTime} min
+            {article.readingTime} min read
           </p>
         </div>
         <Link
@@ -129,7 +131,9 @@ export function ArticleCard({
             src={article.featuredImage}
             alt=""
             loading="lazy"
-            className="aspect-[4/3] w-full object-cover"
+            width={112}
+            height={84}
+            className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         </Link>
       </article>
@@ -144,13 +148,22 @@ export function ArticleCard({
             src={article.featuredImage}
             alt={article.featuredImageCaption}
             fetchPriority="high"
+            width={800}
+            height={450}
             className="aspect-[16/9] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02] sm:aspect-[16/10]"
           />
         </Link>
         <div className="pt-3.5 sm:pt-5">
-          <p className="kicker">{category.kicker}</p>
-          <h2 className="mt-2.5 max-w-[22ch] font-display text-[1.75rem] font-medium leading-[1.08] tracking-[-0.022em] text-ink headline-balance sm:text-[2.3rem] md:text-[2.7rem] lg:text-[3rem]">
-            <Link to={`/article/${article.slug}`} className="hover:text-emerald-deep">
+          <div className="flex items-center gap-2">
+            <p className="kicker">{category.kicker}</p>
+            {article.isBreaking && (
+              <span className="bg-newsred px-1.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-paper">
+                Developing
+              </span>
+            )}
+          </div>
+          <h2 className="mt-2.5 max-w-[22ch] font-display text-[1.85rem] font-medium leading-[1.08] tracking-[-0.022em] text-ink headline-balance sm:text-[2.4rem] md:text-[2.85rem] lg:text-[3.15rem]">
+            <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald-deep">
               {article.title}
             </Link>
           </h2>
@@ -179,12 +192,14 @@ export function ArticleCard({
           src={article.featuredImage}
           alt=""
           loading="lazy"
+          width={400}
+          height={250}
           className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
       </Link>
       <p className="kicker mt-3.5">{category.kicker}</p>
       <h3 className="mt-1.5 font-display text-[1.2rem] font-medium leading-[1.18] tracking-[-0.018em] text-ink sm:text-[1.3rem]">
-        <Link to={`/article/${article.slug}`} className="hover:text-emerald">
+        <Link to={`/article/${article.slug}`} className="transition-colors hover:text-emerald">
           {article.title}
         </Link>
       </h3>
@@ -194,7 +209,7 @@ export function ArticleCard({
       <p className="mt-2.5 font-sans text-[11.5px] text-faint">
         {author?.name}
         <span className="mx-1.5 text-rule-strong">·</span>
-        {article.readingTime} min
+        {article.readingTime} min read
       </p>
     </article>
   );
