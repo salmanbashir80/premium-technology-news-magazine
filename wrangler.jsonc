@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "premium-technology-news-magazine",
+  "account_id": "f542683e97458480452b0b8ef37a898a",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2026-10-06",
   "assets": {
