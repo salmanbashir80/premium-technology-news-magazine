@@ -1,6 +1,6 @@
 import https from 'node:https';
 
-const baseUrl = 'https://premium-technology-news-magazine.himalayankoh-pk.workers.dev';
+const baseUrl = process.argv[2] || process.env.DEPLOYMENT_URL || 'https://premium-technology-news-magazine.8002salman.workers.dev';
 
 function fetchUrl(path) {
   return new Promise((resolve, reject) => {
