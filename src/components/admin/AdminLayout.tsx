@@ -33,11 +33,13 @@ const nav = [
 ];
 
 function StaffLoginModal({ onClose }: { onClose: () => void }) {
-  const { signIn } = useApp();
+  const { signIn, resetPassword } = useApp();
+  const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -56,11 +58,31 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handleRecovery = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email) {
+      setErrorMsg("Please enter your registered staff email address.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    const { error } = await resetPassword(email);
+    setLoading(false);
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      setSuccessMsg("A secure password recovery link has been dispatched to your email address.");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md border border-rule bg-paper p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="flex items-center justify-between border-b border-rule pb-3">
-          <h2 id="modal-title" className="font-display text-xl font-medium">Editorial Staff Authentication</h2>
+          <h2 id="modal-title" className="font-display text-xl font-medium">
+            {mode === "login" ? "Editorial Staff Authentication" : "Account Password Recovery"}
+          </h2>
           <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-ink text-sm">
             ✕
           </button>
@@ -72,47 +94,112 @@ function StaffLoginModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="mt-4 space-y-3">
-          <div>
-            <label htmlFor="staff-email-input" className="block text-xs font-semibold uppercase tracking-wider text-muted">
-              Staff Email
-            </label>
-            <input
-              id="staff-email-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="editor@signaldesk.news"
-              required
-              autoComplete="username"
-              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
-            />
+        {successMsg && (
+          <div className="mt-4 border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800">
+            {successMsg}
           </div>
+        )}
 
-          <div>
-            <label htmlFor="staff-password-input" className="block text-xs font-semibold uppercase tracking-wider text-muted">
-              Password
-            </label>
-            <input
-              id="staff-password-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              required
-              autoComplete="current-password"
-              className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
-            />
-          </div>
+        {mode === "login" ? (
+          <form onSubmit={handleLogin} className="mt-4 space-y-3">
+            <div>
+              <label htmlFor="staff-email-input" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+                Staff Email
+              </label>
+              <input
+                id="staff-email-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="editor@signaldesk.news"
+                required
+                autoComplete="username"
+                className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#161615] py-2 text-xs font-bold uppercase tracking-widest text-paper hover:bg-emerald disabled:opacity-50"
-          >
-            {loading ? "Authenticating..." : "Sign In with Supabase Auth"}
-          </button>
-        </form>
+            <div>
+              <label htmlFor="staff-password-input" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+                Password
+              </label>
+              <input
+                id="staff-password-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                required
+                autoComplete="current-password"
+                className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
+                className="text-[11.5px] text-muted hover:text-ink underline"
+              >
+                Forgot password or need recovery?
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#161615] py-2 text-xs font-bold uppercase tracking-widest text-paper hover:bg-emerald disabled:opacity-50"
+            >
+              {loading ? "Authenticating..." : "Sign In with Supabase Auth"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleRecovery} className="mt-4 space-y-3">
+            <p className="text-xs text-muted">
+              Enter your authorized staff or owner email address to receive a secure Supabase Auth password reset link.
+            </p>
+            <div>
+              <label htmlFor="recovery-email-input" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+                Staff Email
+              </label>
+              <input
+                id="recovery-email-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="owner@gmail.com"
+                required
+                autoComplete="email"
+                className="mt-1 w-full border border-rule bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/60"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#161615] py-2 text-xs font-bold uppercase tracking-widest text-paper hover:bg-emerald disabled:opacity-50"
+            >
+              {loading ? "Sending link..." : "Send Password Recovery Link"}
+            </button>
+
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
+                className="text-xs text-muted hover:text-ink underline"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="mt-4 border-t border-rule pt-3 text-[11px] text-muted">
           <p className="font-medium text-ink">Strict Onboarding &amp; RBAC Notice</p>

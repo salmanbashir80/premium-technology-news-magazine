@@ -18,6 +18,7 @@ interface AppContextValue {
   authLoading: boolean;
   signIn: (email: string, pass: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   // Editorial Admin items
   adminItems: AdminItem[];
   updateAdminStatus: (id: string, status: ArticleStatus) => Promise<void>;
@@ -32,14 +33,28 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({
+  children,
+  initialArticles,
+}: {
+  children: ReactNode;
+  initialArticles?: Article[];
+}) {
   const [newsletterJoined, setNewsletterJoined] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [adminItems, setAdminItems] = useState<AdminItem[]>(initialAdminItems);
-  const [liveArticles, setLiveArticles] = useState<Article[]>(publishedArticles);
+  const [liveArticles, setLiveArticles] = useState<Article[]>(() => {
+    if (initialArticles !== undefined) {
+      return initialArticles;
+    }
+    if (typeof window !== "undefined" && (window as any).__INITIAL_DATA__?.articles !== undefined) {
+      return (window as any).__INITIAL_DATA__.articles;
+    }
+    return publishedArticles;
+  });
 
   // 1. Listen for Supabase Auth state changes
   useEffect(() => {
@@ -137,7 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .eq("status", "published")
         .order("published_at", { ascending: false });
 
-      if (!artErr && artRows && artRows.length > 0) {
+      if (!artErr && artRows) {
         setLiveArticles(artRows.map(mapDbToArticle));
       }
 
@@ -166,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {
-      // Resilient local fallback maintains full UI continuity
+      // Resilient error handling without injecting fictional content
     }
   };
 
@@ -196,6 +211,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setProfile(null);
     } catch {
       // ignore
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/admin` : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      if (error) return { error: new Error(error.message) };
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
     }
   };
 
@@ -263,6 +291,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       authLoading,
       signIn,
       signOut,
+      resetPassword,
       adminItems,
       updateAdminStatus,
       assignAdmin,

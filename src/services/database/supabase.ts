@@ -9,7 +9,7 @@
 
 import { supabase } from "../../lib/supabase";
 import type { Article, Author, Category, ArticleStatus, CategorySlug, ContentBlock } from "../../types";
-import { publishedArticles, getArticle as getStaticArticle } from "../../data/articles";
+import { getArticle as getStaticArticle } from "../../data/articles";
 import { categories as staticCategories } from "../../data/categories";
 import { authors as staticAuthors } from "../../data/authors";
 
@@ -67,6 +67,18 @@ export function mapDbToArticle(row: any): Article {
     category: categorySlug as CategorySlug,
     tags: Array.isArray(row.tags) && row.tags.length > 0 ? row.tags : (staticFallback?.tags || []),
     authorId: authorSlug,
+    author: row.authors ? {
+      id: row.authors.slug || row.author_id || authorSlug,
+      slug: row.authors.slug || authorSlug,
+      name: row.authors.name || "Signal Desk Staff",
+      role: row.authors.role || "Staff Reporter",
+      location: row.authors.location || "Newsroom",
+      bio: row.authors.bio || "",
+      expertise: row.authors.expertise || [],
+      image: row.authors.image_url || "/images/portraits/maya.jpg",
+      email: row.authors.email || "",
+      social: {},
+    } : undefined,
     publishedAt: row.published_at || row.created_at,
     updatedAt: row.updated_at || row.published_at || row.created_at,
     readingTime: row.reading_time || 5,
@@ -88,7 +100,7 @@ export function mapDbToArticle(row: any): Article {
       ? row.corrections
       : (staticFallback?.corrections || []),
     status: (row.status || "published") as ArticleStatus,
-    isDemo: false as any,
+    isDemo: Boolean(row.is_demo),
   };
 }
 
@@ -102,11 +114,11 @@ export class SupabaseArticleRepository implements IArticleRepository {
         .maybeSingle();
 
       if (error || !data) {
-        return publishedArticles.find((a) => a.id === id) ?? null;
+        return null;
       }
       return mapDbToArticle(data);
     } catch {
-      return publishedArticles.find((a) => a.id === id) ?? null;
+      return null;
     }
   }
 
@@ -119,11 +131,11 @@ export class SupabaseArticleRepository implements IArticleRepository {
         .maybeSingle();
 
       if (error || !data) {
-        return getStaticArticle(slug) ?? null;
+        return null;
       }
       return mapDbToArticle(data);
     } catch {
-      return getStaticArticle(slug) ?? null;
+      return null;
     }
   }
 
@@ -155,8 +167,8 @@ export class SupabaseArticleRepository implements IArticleRepository {
       }
 
       const { data, error, count } = await query;
-      if (error || !data || data.length === 0) {
-        return this.fallbackList(filter);
+      if (error || !data) {
+        return { data: [], count: 0 };
       }
 
       let results = data.map(mapDbToArticle);
@@ -167,25 +179,11 @@ export class SupabaseArticleRepository implements IArticleRepository {
         results = results.filter((a) => a.tags.includes(filter.tag!));
       }
 
-      return { data: results, count: count ?? results.length };
+      const finalCount = (filter?.category || filter?.tag) ? results.length : (count ?? results.length);
+      return { data: results, count: finalCount };
     } catch {
-      return this.fallbackList(filter);
+      return { data: [], count: 0 };
     }
-  }
-
-  private fallbackList(filter?: ArticleFilter): { data: Article[]; count: number } {
-    let list = [...publishedArticles];
-    if (filter?.category) list = list.filter((a) => a.category === filter.category);
-    if (filter?.isBreaking !== undefined) list = list.filter((a) => a.isBreaking === filter.isBreaking);
-    if (filter?.isTrending !== undefined) list = list.filter((a) => a.isTrending === filter.isTrending);
-    if (filter?.isFeatured !== undefined) list = list.filter((a) => a.isFeatured === filter.isFeatured);
-    if (filter?.tag) list = list.filter((a) => a.tags.includes(filter.tag!));
-    if (filter?.status) list = list.filter((a) => a.status === filter.status);
-
-    const count = list.length;
-    if (filter?.offset) list = list.slice(filter.offset);
-    if (filter?.limit) list = list.slice(0, filter.limit);
-    return { data: list, count };
   }
 
   async getRelated(articleId: string, limit = 3): Promise<Article[]> {
@@ -196,11 +194,7 @@ export class SupabaseArticleRepository implements IArticleRepository {
       const { data } = await this.list({ category: current.category, limit: limit + 1 });
       return data.filter((a) => a.id !== current.id).slice(0, limit);
     } catch {
-      const target = publishedArticles.find((a) => a.id === articleId);
-      if (!target) return [];
-      return publishedArticles
-        .filter((a) => a.id !== target.id && (a.category === target.category || a.tags.some((t) => target.tags.includes(t))))
-        .slice(0, limit);
+      return [];
     }
   }
 
@@ -229,6 +223,7 @@ export class SupabaseArticleRepository implements IArticleRepository {
       category_id: catData?.id,
       author_id: authorData?.id,
       status: article.status || "draft",
+      is_demo: Boolean(article.isDemo),
       is_featured: Boolean(article.isFeatured),
       is_breaking: Boolean(article.isBreaking),
       is_editors_pick: Boolean(article.isEditorsPick),
