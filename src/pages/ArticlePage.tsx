@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   articlesByAuthor,
-  getArticle,
   moreFromCategory,
   relatedArticles,
 } from "../data/articles";
@@ -28,7 +27,7 @@ export function ArticlePage() {
   const { liveArticles } = useApp();
   const article = useMemo(() => {
     if (!slug) return undefined;
-    return liveArticles.find((a) => a.slug === slug) ?? getArticle(slug);
+    return liveArticles.find((a) => a.slug === slug);
   }, [slug, liveArticles]);
 
   /** Split the body so a discreet in-article advert sits at a natural section break. */
@@ -60,8 +59,14 @@ export function ArticlePage() {
     );
   }
 
-  const author = getAuthor(article.authorId);
-  const category = categoryMap[article.category];
+  const author = article.author || getAuthor(article.authorId);
+  const category = categoryMap[article.category] || {
+    slug: article.category,
+    name: article.category.toUpperCase(),
+    navLabel: article.category,
+    kicker: article.category.toUpperCase(),
+    description: "",
+  };
   const related = relatedArticles(article, 3);
   const sidebarStories = moreFromCategory(article, related, 4);
   const authorStories = author ? articlesByAuthor(author.id).length : 0;

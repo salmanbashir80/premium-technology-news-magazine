@@ -86,6 +86,7 @@ export interface Article {
   category: CategorySlug;
   tags: string[];
   authorId: string;
+  author?: Author;
   publishedAt: string;
   updatedAt: string;
   readingTime: number;
@@ -101,7 +102,7 @@ export interface Article {
   sources: Source[];
   corrections: Correction[];
   status: ArticleStatus;
-  isDemo: true;
+  isDemo?: boolean;
 }
 
 export interface AdminItem {

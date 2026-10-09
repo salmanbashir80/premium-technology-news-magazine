@@ -52,8 +52,21 @@ async function main() {
       console.log(`[VERIFIED OWNER] Found verified account: ${email} (ID: ${user.id})`);
       verifiedOwnerId = user.id;
 
-      // Rotate owner password to cryptographically strong random secret
-      const secureOwnerPass = crypto.randomBytes(32).toString('base64url') + '!A1';
+      // Secure delivery mechanism: Read or create secure owner secret in gitignored .env.local
+      let secureOwnerPass = '';
+      if (fs.existsSync('.env.local')) {
+        const envContent = fs.readFileSync('.env.local', 'utf8');
+        const m = envContent.match(/^\s*OWNER_PASSWORD\s*=\s*"?([^"\r\n]*)"?\s*$/m);
+        if (m && m[1]) secureOwnerPass = m[1].trim();
+      }
+      if (!secureOwnerPass) {
+        secureOwnerPass = crypto.randomBytes(32).toString('base64url') + '!A1';
+        let localEnv = fs.readFileSync('.env.local', 'utf8');
+        localEnv = localEnv.replace(/OWNER_EMAIL=.*\n/g, '').replace(/OWNER_PASSWORD=.*\n/g, '');
+        localEnv += `\nOWNER_EMAIL=${verifiedOwnerEmail}\nOWNER_PASSWORD=${secureOwnerPass}\n`;
+        fs.writeFileSync('.env.local', localEnv, 'utf8');
+      }
+
       await adminClient.auth.admin.updateUserById(user.id, {
         password: secureOwnerPass,
         email_confirm: true,
@@ -68,7 +81,7 @@ async function main() {
         role: 'OWNER',
         updated_at: new Date().toISOString(),
       });
-      console.log(`[PASS] Verified owner credentials rotated and confirmed as OWNER.`);
+      console.log(`[PASS] Verified owner credentials rotated and delivered to secure .env.local.`);
       continue;
     }
 

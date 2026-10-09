@@ -1,7 +1,6 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { ServerApp } from "../ServerApp";
-import { publishedArticles, getArticle } from "../data/articles";
 import { categories, categoryMap } from "../data/categories";
 import { authors, getAuthor } from "../data/authors";
 import { brand } from "../config/brand";
@@ -46,7 +45,7 @@ async function getLivePublishedArticles(): Promise<Article[]> {
 
     if (res.ok) {
       const rows = (await res.json()) as any[];
-      if (Array.isArray(rows) && rows.length > 0) {
+      if (Array.isArray(rows)) {
         cachedPublishedArticles = rows.map(mapDbToArticle);
         lastCacheTimestamp = now;
         return cachedPublishedArticles;
@@ -56,7 +55,11 @@ async function getLivePublishedArticles(): Promise<Article[]> {
     console.warn("Supabase Worker REST query error:", err);
   }
 
-  return publishedArticles;
+  if (cachedPublishedArticles) {
+    return cachedPublishedArticles;
+  }
+
+  return [];
 }
 
 async function getLiveArticleBySlug(slug: string): Promise<Article | undefined> {
@@ -80,7 +83,7 @@ async function getLiveArticleBySlug(slug: string): Promise<Article | undefined> 
       const rows = (await res.json()) as any[];
       if (Array.isArray(rows) && rows.length > 0) {
         const article = mapDbToArticle(rows[0]);
-        if (cachedPublishedArticles) {
+        if (cachedPublishedArticles && !cachedPublishedArticles.some((a) => a.id === article.id)) {
           cachedPublishedArticles.unshift(article);
         }
         return article;
@@ -90,7 +93,7 @@ async function getLiveArticleBySlug(slug: string): Promise<Article | undefined> 
     console.warn(`Supabase Worker single fetch error for ${slug}:`, err);
   }
 
-  return getArticle(slug);
+  return undefined;
 }
 
 function escapeXml(unsafe: string): string {
@@ -174,7 +177,20 @@ function generateNewsSitemapXml(articles: Article[]): Response {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n';
 
-  for (const article of articles) {
+  const now = Date.now();
+  const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+  // Task B: Isolate demo content and restrict to articles published within last 48 hours
+  const eligibleArticles = articles.filter((article) => {
+    if (article.isDemo) return false;
+    if (!article.publishedAt) return false;
+    const pubTime = new Date(article.publishedAt).getTime();
+    if (isNaN(pubTime)) return false;
+    const age = now - pubTime;
+    return age >= 0 && age <= FORTY_EIGHT_HOURS_MS;
+  });
+
+  for (const article of eligibleArticles) {
     xml += "  <url>\n";
     xml += `    <loc>${BASE_URL}/${article.category}/${article.slug}</loc>\n`;
     xml += "    <news:news>\n";
@@ -412,7 +428,7 @@ export default {
       const title = `${article.title} — Signal Desk`;
       const description = article.dek || article.excerpt;
       const ogImage = article.featuredImage || `${BASE_URL}/images/hero-ai-cluster.jpg`;
-      const author = getAuthor(article.authorId);
+      const author = article.author || getAuthor(article.authorId);
 
       const jsonLd = {
         "@context": "https://schema.org",
@@ -476,11 +492,16 @@ export default {
       html = html.replace("</head>", `  <meta name="robots" content="noindex, nofollow">\n</head>`);
     }
 
+    // Prepare initial articles payload for genuine SSR & client hydration
+    const initialArticles = article && !liveArticles.some((a) => a.id === article.id)
+      ? [article, ...liveArticles]
+      : liveArticles;
+
     // Genuine React Server-Side Rendering (SSR)
     // Renders the exact matching React markup into #root so client hydrateRoot hydrates seamlessly
     let appHtml = "";
     try {
-      appHtml = renderToString(React.createElement(ServerApp, { location: pathname }));
+      appHtml = renderToString(React.createElement(ServerApp, { location: pathname, initialArticles }));
     } catch (err) {
       console.error("SSR render error:", err);
       if (article) {
@@ -491,6 +512,11 @@ export default {
     if (appHtml) {
       html = html.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
     }
+
+    // Dehydrate initial state so client hydrateRoot mounts with matching data
+    const initialDataJson = JSON.stringify({ articles: initialArticles }).replace(/</g, "\\u003c");
+    const dataScript = `<script id="__INITIAL_DATA__">window.__INITIAL_DATA__ = ${initialDataJson};</script>`;
+    html = html.replace("</head>", `  ${dataScript}\n</head>`);
 
     return new Response(html, {
       status: 200,
