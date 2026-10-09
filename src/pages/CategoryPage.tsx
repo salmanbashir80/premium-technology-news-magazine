@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 import { getCategory } from "../data/categories";
 import { articlesByCategory } from "../data/articles";
 import { ArticleCard } from "../components/ui/ArticleCard";
@@ -10,8 +11,12 @@ const PAGE_SIZE = 6;
 
 export function CategoryPage() {
   const { slug = "" } = useParams();
+  const { liveArticles } = useApp();
   const category = getCategory(slug);
-  const all = articlesByCategory(slug);
+  const all = useMemo(() => {
+    const pool = liveArticles.length > 0 ? liveArticles : articlesByCategory(slug);
+    return pool.filter((a) => a.category === slug && a.status === "published");
+  }, [liveArticles, slug]);
   const [page, setPage] = useState(1);
   const [tag, setTag] = useState<string | null>(null);
 

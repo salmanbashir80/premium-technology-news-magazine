@@ -9,7 +9,7 @@ import type { CategorySlug } from "../types";
 export function SearchPage() {
   const [params, setParams] = useSearchParams();
   const qParam = params.get("q") ?? "";
-  const { setSearchQuery } = useApp();
+  const { setSearchQuery, liveArticles } = useApp();
   const [input, setInput] = useState(qParam);
   const [cat, setCat] = useState<CategorySlug | "all">("all");
 
@@ -18,9 +18,15 @@ export function SearchPage() {
   }, [qParam]);
 
   const results = useMemo(() => {
-    const found = searchArticles(qParam);
-    return cat === "all" ? found : found.filter((a) => a.category === cat);
-  }, [qParam, cat]);
+    const q = qParam.trim().toLowerCase();
+    if (!q) return [];
+    const pool = liveArticles.length > 0 ? liveArticles : searchArticles(qParam);
+    const matches = pool.filter((a) => {
+      const hay = [a.title, a.dek, a.excerpt, a.tags.join(" "), a.category].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+    return cat === "all" ? matches : matches.filter((a) => a.category === cat);
+  }, [qParam, cat, liveArticles]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
