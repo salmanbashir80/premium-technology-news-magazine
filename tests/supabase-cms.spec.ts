@@ -20,9 +20,13 @@ test.describe("Supabase CMS & Editorial Workflow Integration", () => {
     await expect(modal).toBeVisible();
     await expect(modal.getByRole("heading", { name: "Editorial Staff Authentication" })).toBeVisible();
 
-    // Preset buttons work
-    await modal.getByRole("button", { name: /^EDITOR/ }).click();
-    await expect(modal.locator("#staff-email-input")).toHaveValue("maya.ellison@signaldesk.news");
+    // Form inputs and security notice are present
+    await expect(modal.locator("#staff-email-input")).toBeVisible();
+    await expect(modal.locator("#staff-password-input")).toBeVisible();
+    await expect(modal.getByText("Strict Onboarding & RBAC Notice")).toBeVisible();
+
+    await modal.locator("#staff-email-input").fill("editor@signaldesk.news");
+    await expect(modal.locator("#staff-email-input")).toHaveValue("editor@signaldesk.news");
 
     // Close button dismisses modal
     await modal.getByRole("button", { name: "Close dialog" }).click();

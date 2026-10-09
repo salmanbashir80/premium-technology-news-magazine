@@ -8,6 +8,8 @@ import { brand } from "../config/brand";
 import { formatDateTime } from "../lib/format";
 import type { Article } from "../types";
 
+import { mapDbToArticle } from "../services/database/supabase";
+
 export interface Env {
   ASSETS: {
     fetch: (request: Request | string) => Promise<Response>;
@@ -15,6 +17,81 @@ export interface Env {
 }
 
 const BASE_URL = "https://premium-technology-news-magazine.8002salman.workers.dev";
+const SUPABASE_REST_URL = "https://sxwvyidbawcontujulhc.supabase.co/rest/v1";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4d3Z5aWRiYXdjb250dWp1bGhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTI0NzMsImV4cCI6MjEwNzA2ODQ3M30.vYUaYp_-0inEn5VAcoLMGYcj2b8OBZwDInJcmYwsaLQ";
+
+// In-worker 60-second cache
+let cachedPublishedArticles: Article[] | null = null;
+let lastCacheTimestamp = 0;
+const CACHE_TTL_MS = 60000;
+
+async function getLivePublishedArticles(): Promise<Article[]> {
+  const now = Date.now();
+  if (cachedPublishedArticles && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
+    return cachedPublishedArticles;
+  }
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_REST_URL}/articles?select=*,categories(slug,name,kicker),authors(slug,name,role,email)&status=eq.published&order=published_at.desc`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (res.ok) {
+      const rows = (await res.json()) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        cachedPublishedArticles = rows.map(mapDbToArticle);
+        lastCacheTimestamp = now;
+        return cachedPublishedArticles;
+      }
+    }
+  } catch (err) {
+    console.warn("Supabase Worker REST query error:", err);
+  }
+
+  return publishedArticles;
+}
+
+async function getLiveArticleBySlug(slug: string): Promise<Article | undefined> {
+  const allArticles = await getLivePublishedArticles();
+  const cached = allArticles.find((a) => a.slug === slug);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_REST_URL}/articles?select=*,categories(slug,name,kicker),authors(slug,name,role,email)&status=eq.published&slug=eq.${encodeURIComponent(slug)}`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (res.ok) {
+      const rows = (await res.json()) as any[];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const article = mapDbToArticle(rows[0]);
+        if (cachedPublishedArticles) {
+          cachedPublishedArticles.unshift(article);
+        }
+        return article;
+      }
+    }
+  } catch (err) {
+    console.warn(`Supabase Worker single fetch error for ${slug}:`, err);
+  }
+
+  return getArticle(slug);
+}
 
 function escapeXml(unsafe: string): string {
   return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -51,7 +128,7 @@ function generateRobotsTxt(): Response {
   });
 }
 
-function generateSitemapXml(): Response {
+function generateSitemapXml(articles: Article[]): Response {
   const staticRoutes = [
     "/",
     "/search",
@@ -76,7 +153,7 @@ function generateSitemapXml(): Response {
     xml += `  <url>\n    <loc>${BASE_URL}/category/${cat.slug}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
   }
 
-  for (const article of publishedArticles) {
+  for (const article of articles) {
     const lastmod = article.updatedAt || article.publishedAt;
     xml += `  <url>\n    <loc>${BASE_URL}/${article.category}/${article.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
   }
@@ -93,11 +170,11 @@ function generateSitemapXml(): Response {
   });
 }
 
-function generateNewsSitemapXml(): Response {
+function generateNewsSitemapXml(articles: Article[]): Response {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n';
 
-  for (const article of publishedArticles) {
+  for (const article of articles) {
     xml += "  <url>\n";
     xml += `    <loc>${BASE_URL}/${article.category}/${article.slug}</loc>\n`;
     xml += "    <news:news>\n";
@@ -123,7 +200,7 @@ function generateNewsSitemapXml(): Response {
   });
 }
 
-function generateRssXml(): Response {
+function generateRssXml(articles: Article[]): Response {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n';
   xml += "  <channel>\n";
@@ -133,7 +210,7 @@ function generateRssXml(): Response {
   xml += `    <language>en-us</language>\n`;
   xml += `    <atom:link href="${BASE_URL}/rss.xml" rel="self" type="application/rss+xml" />\n`;
 
-  for (const article of publishedArticles) {
+  for (const article of articles) {
     const author = getAuthor(article.authorId);
     const pubDate = new Date(article.publishedAt).toUTCString();
     const link = `${BASE_URL}/${article.category}/${article.slug}`;
@@ -251,18 +328,20 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, "") || "/";
 
+    const liveArticles = await getLivePublishedArticles();
+
     // 1. Direct XML & Robots Endpoints
     if (pathname === "/robots.txt") {
       return generateRobotsTxt();
     }
     if (pathname === "/sitemap.xml") {
-      return generateSitemapXml();
+      return generateSitemapXml(liveArticles);
     }
     if (pathname === "/sitemap-news.xml") {
-      return generateNewsSitemapXml();
+      return generateNewsSitemapXml(liveArticles);
     }
     if (pathname === "/rss.xml") {
-      return generateRssXml();
+      return generateRssXml(liveArticles);
     }
 
     // 2. Static Asset Files (.js, .css, .jpg, .png, .svg, .woff2, .json, etc.)
@@ -286,7 +365,7 @@ export default {
       isNotFound = true;
     } else if (parts.length === 2 && parts[0] === "article") {
       // Legacy alias: /article/:slug
-      article = getArticle(parts[1]);
+      article = await getLiveArticleBySlug(parts[1]);
       if (!article) isNotFound = true;
     } else if (parts.length === 2 && parts[0] === "category") {
       const exists = categories.some((c) => c.slug === parts[1]);
@@ -298,7 +377,7 @@ export default {
       // Clean pattern: /:category/:slug (e.g., /ai/ai-power-bottleneck-data-centers)
       const isKnownCategory = categories.some((c) => c.slug === parts[0]);
       if (isKnownCategory) {
-        article = getArticle(parts[1]);
+        article = await getLiveArticleBySlug(parts[1]);
         if (!article) isNotFound = true;
       } else {
         isNotFound = true;
